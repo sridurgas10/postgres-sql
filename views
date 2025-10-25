@@ -1,0 +1,33 @@
+-- 1.Create a view to display each customer’s full name, total rentals made, and total amount spent.
+
+
+
+create or replace view customer_detail
+   as
+   select c.customer_id,concat(c.first_name, ' ',c.last_name) as customer_full_name ,
+       count(r.rental_id) as total_rentals,
+       sum(p.amount) as total_amount_spent 
+    from customer c  
+    join rental r on c.customer_id=r.customer_id
+    join payment p on  p.customer_id=r.customer_id
+    group by c.customer_id,customer_full_name
+    order by total_rentals,total_amount_spent 
+    
+    
+select*from customer_detail    
+
+
+--2. Create a view to list each film’s title and how many times it has been rented.
+
+create or replace view rental_detailsof_film
+as 
+  select f.title as film_title,
+         count(i.inventory_id) as total_rented_film
+  from film f
+  join inventory i on f.film_id=i.film_id
+  join rental r on i.inventory_id=r.inventory_id
+  group by film_title 
+  order by total_rented_film
+ 
+select*from   rental_detailsof_film
+  
