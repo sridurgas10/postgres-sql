@@ -1,0 +1,58 @@
+--1.Write a stored procedure to generate and store monthly revenue per store in a summary table.
+
+create or replace procedure summary_table()
+
+language plpgsql
+as $$
+
+  
+begin 
+    insert into store_revenue_summary(store_id, month, total_revenue, total_payments)
+	select s.store_id,to_char(p.payment_date, 'yyyy-mm') as month,
+	sum(p.amount) as total_revenue,
+	count(*) as total_payments from payment p
+	join store s on p.staff_id=s.manager_staff_id
+	group by s.store_id,month ;
+
+	raise notice 'summary table generated sucessfully';
+	
+end;
+$$
+
+create table store_revenue_summary (
+    store_id int,
+    month text,
+    total_revenue float,
+    total_payments int
+)
+
+call summary_table();
+select*from store_revenue_summary
+
+--2. Write a stored procedure that inserts a new rental record and corresponding payment transaction.
+
+create or replace procedure add_rental_and_payment(
+    p_customer_id int,
+    p_staff_id int,
+    p_inventory_id int,
+    p_amount float
+)
+language plpgsql
+as $$
+declare
+    v_rental_id int;
+begin
+    -- 1. insert rental record
+    insert into rental (rental_date, inventory_id, customer_id, return_date, staff_id, last_update)
+    values (now(), p_inventory_id, p_customer_id, now() + interval '7 days', p_staff_id, now())
+    returning rental_id into v_rental_id;
+
+    -- 2. insert payment record corresponding to the rental
+    insert into payment (customer_id, staff_id, rental_id, amount, payment_date)
+    values (p_customer_id, p_staff_id, v_rental_id, p_amount, now());
+
+    raise notice 'successfully added new rental (id=%) and payment', v_rental_id;
+end;
+$$;
+	
+call add_rental_and_payment(347,2,1525,3.99)
