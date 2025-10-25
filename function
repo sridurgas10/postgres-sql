@@ -1,0 +1,73 @@
+-- 3. Write a function that calculates a late fee based on the number of days between rental_date and return_date.
+
+create or replace function  late_fee()
+returns timestamp --,float
+language plpgsql
+as $$
+declare
+   days_late timestamp;
+  -- late_fees float;
+begin
+    select 
+    ( r.return_date-r.rental_date  ) into days_late
+    from rental r 
+    join payment p on p.rental_id=r.rental_id
+    where return_date >= payment_date
+    order by days_late;
+    return days_late;--late_fees;
+end;
+$$
+
+SELECT late_fee();
+
+  select 
+     ( r.return_date-r.rental_date  ) as days_late
+    from rental r 
+    join payment p on p.rental_id=r.rental_id
+    where return_date >= rental_date
+    order by days_late
+  
+drop function late_fee()	
+--4.Write a function to calculate the total balance (total payments) made by a specific customer.
+
+create or replace function  total_balance(p_customer_id int )
+returns float
+language plpgsql
+as $$
+declare
+         total_payment float;
+begin
+   select sum(p.amount) into total_payment from payment p
+   where p.customer_id=p_customer_id;
+
+   return  total_payment;
+end;
+$$
+	
+select total_balance(163)
+
+
+--3.Create a function that checks whether a specific film is currently available for rent.
+select*from inventory
+
+create or replace function available_film( p_title text)
+returns table(title TEXT)
+language plpgsql
+as $$
+begin
+   if  exists (
+    select 1 from film f 
+	join inventory i on i.film_id=f.film_id
+	join rental r on i.inventory_id=r.inventory_id
+	where r.return_date is not null and p_title=f.title
+    )then
+	    raise notice ' yes available';
+   else
+	    raise notice ' not available';
+	    
+	 end if;   
+end;
+$$
+
+select available_film( 'African Egg')
+
