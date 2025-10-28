@@ -1,33 +1,26 @@
 -- 3. Write a function that calculates a late fee based on the number of days between rental_date and return_date.
-
-create or replace function  late_fee()
-returns timestamp --,float
+create or replace function late_fee()
+returns table (
+    days_late int,
+    late_fees numeric
+)
 language plpgsql
 as $$
-declare
-   days_late timestamp;
-  -- late_fees float;
 begin
+    return query
     select 
-    ( r.return_date-r.rental_date  ) into days_late
-    from rental r 
-    join payment p on p.rental_id=r.rental_id
-    where return_date >= payment_date
+        extract(day from (r.return_date - r.rental_date))::int as days_late,
+        (extract(day from (r.return_date - r.rental_date)) * p.amount)::numeric as late_fees
+    from rental r
+    join payment p on p.rental_id = r.rental_id
+    where r.return_date >= r.rental_date
     order by days_late;
-    return days_late;--late_fees;
 end;
-$$
+$$;
 
-SELECT late_fee();
 
-  select 
-     ( r.return_date-r.rental_date  ) as days_late
-    from rental r 
-    join payment p on p.rental_id=r.rental_id
-    where return_date >= rental_date
-    order by days_late
-  
-drop function late_fee()	
+select * from late_fee();
+
 --4.Write a function to calculate the total balance (total payments) made by a specific customer.
 
 create or replace function  total_balance(p_customer_id int )
